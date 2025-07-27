@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Inventory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .modal { display: none; }
+        .modal.is-open { display: flex; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Warehouse Inventory Tracker</h1>
+            <p class="text-lg text-gray-600">A real-time view of product stock levels.</p>
+        </header>
+
+        <!-- Main Content Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Column: Inventory & Products -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Inventory Table -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-semibold">Current Inventory</h2>
+                        <button onclick="fetchInventory()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Refresh</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Part No.</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- JS will populate this -->
+                                <tr><td colspan="3" class="p-4 text-center text-gray-500">Loading inventory...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recent Transactions -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4">Recent Transactions</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- JS will populate this -->
+                                <tr><td colspan="4" class="p-4 text-center text-gray-500">Loading transactions...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Actions -->
+            <div class="space-y-8">
+                <!-- Add Product Form -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4">Add New Product</h2>
+                    <form id="add-product-form" class="space-y-4">
+                        <div>
+                            <label for="part_no" class="block text-sm font-medium text-gray-700">Part Number</label>
+                            <input type="text" id="part_no" name="part_no" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                            <textarea id="description" name="description" rows="3" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Save Product</button>
+                    </form>
+                </div>
+
+                 <!-- Add Transaction Button -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4">New Transaction</h2>
+                    <p class="text-gray-600 mb-4">Record a new stock movement (Stock In or Stock Out).</p>
+                    <button onclick="openTransactionModal()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Create Transaction</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div id="transaction-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full items-center justify-center">
+        <div class="relative mx-auto p-8 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <h3 class="text-2xl font-bold mb-6">Create New Stock Transaction</h3>
+            <form id="transaction-form">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label for="transaction_code" class="block text-sm font-medium text-gray-700">Transaction Code</label>
+                        <input type="text" id="transaction_code" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., GRN-12345">
+                    </div>
+                    <div>
+                        <label for="transaction_type" class="block text-sm font-medium text-gray-700">Transaction Type</label>
+                        <select id="transaction_type" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="IN">Stock In</option>
+                            <option value="OUT">Stock Out</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="notes" class="block text-sm font-medium text-gray-700">Notes</label>
+                    <textarea id="notes" rows="2" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Optional notes..."></textarea>
+                </div>
+
+                <!-- Transaction Details -->
+                <h4 class="text-lg font-semibold mb-3">Products</h4>
+                <div id="transaction-details-container" class="space-y-4 mb-6">
+                    <!-- JS will add product lines here -->
+                </div>
+                <button type="button" onclick="addTransactionDetailRow()" class="mb-6 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm">Add Product Line</button>
+
+                <div class="flex items-center justify-end space-x-4">
+                    <button type="button" onclick="closeTransactionModal()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">Submit Transaction</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Message/Alert Box -->
+    <div id="message-box" class="hidden fixed top-5 right-5 p-4 rounded-lg shadow-lg text-white">
+        <p id="message-text"></p>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/api';
+        let productCache = []; // Cache products for dropdowns
+
+        // --- UTILITY FUNCTIONS ---
+        function getCsrfToken() {
+            // Django sets a 'csrftoken' cookie. We can read it from there.
+            return document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+        }
+
+        function showMessage(text, type = 'success') {
+            const messageBox = document.getElementById('message-box');
+            const messageText = document.getElementById('message-text');
+            
+            messageText.textContent = text;
+            messageBox.className = 'fixed top-5 right-5 p-4 rounded-lg shadow-lg text-white'; // Reset classes
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-500');
+            } else {
+                messageBox.classList.add('bg-red-500');
+            }
+            messageBox.classList.remove('hidden');
+
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 3000);
+        }
+
+        // --- API FETCH FUNCTIONS ---
+        async function fetchInventory() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/products/inventory/`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const products = await response.json();
+                
+                // Update product cache for transaction form
+                productCache = products;
+
+                const tableBody = document.getElementById('inventory-table-body');
+                tableBody.innerHTML = ''; // Clear existing rows
+                if (products.length === 0) {
+                     tableBody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-500">No products found. Add one to get started.</td></tr>';
+                     return;
+                }
+                products.forEach(product => {
+                    const row = `<tr>
+                        <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">${product.part_no}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">${product.description}</td>
+                        <td class="px-6 py-4 whitespace-nowrap font-bold ${product.current_stock > 0 ? 'text-green-600' : 'text-red-600'}">${product.current_stock}</td>
+                    </tr>`;
+                    tableBody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error('Error fetching inventory:', error);
+                showMessage('Failed to load inventory.', 'error');
+            }
+        }
+
+        async function fetchTransactions() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/transactions/`);
+                 if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                const transactions = data.results; // Handle pagination
+                
+                const tableBody = document.getElementById('transactions-table-body');
+                tableBody.innerHTML = '';
+                 if (transactions.length === 0) {
+                     tableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">No transactions recorded yet.</td></tr>';
+                     return;
+                }
+                transactions.forEach(tx => {
+                    const detailsHtml = tx.details.map(d => `${d.product_part_no} (Qty: ${d.quantity})`).join('<br>');
+                    const row = `<tr>
+                        <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">${tx.transaction_code}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                           <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${tx.transaction_type === 'IN' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${tx.transaction_type_display}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(tx.date).toLocaleDateString()}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${detailsHtml}</td>
+                    </tr>`;
+                    tableBody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error('Error fetching transactions:', error);
+                showMessage('Failed to load transactions.', 'error');
+            }
+        }
+
+        // --- EVENT HANDLERS & FORM SUBMISSIONS ---
+        document.getElementById('add-product-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const productData = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/products/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken(),
+                    },
+                    body: JSON.stringify(productData),
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(JSON.stringify(errorData));
+                }
+                showMessage('Product added successfully!', 'success');
+                this.reset();
+                fetchInventory(); // Refresh inventory list
+            } catch (error) {
+                console.error('Error adding product:', error);
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        });
+
+        document.getElementById('transaction-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const details = [];
+            document.querySelectorAll('.transaction-detail-row').forEach(row => {
+                const product = row.querySelector('select[name="product"]').value;
+                const quantity = row.querySelector('input[name="quantity"]').value;
+                if (product && quantity) {
+                    details.push({
+                        product: parseInt(product),
+                        quantity: parseInt(quantity)
+                    });
+                }
+            });
+
+            if (details.length === 0) {
+                showMessage('Please add at least one product line.', 'error');
+                return;
+            }
+
+            const transactionData = {
+                transaction_code: document.getElementById('transaction_code').value,
+                transaction_type: document.getElementById('transaction_type').value,
+                notes: document.getElementById('notes').value,
+                details: details
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/transactions/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken(),
+                    },
+                    body: JSON.stringify(transactionData),
+                });
+
+                const responseData = await response.json();
+                if (!response.ok) {
+                    // Extract error message from DRF's response format
+                    const errorMessage = responseData.detail || responseData.error || JSON.stringify(responseData);
+                    throw new Error(errorMessage);
+                }
+
+                showMessage('Transaction created successfully!', 'success');
+                closeTransactionModal();
+                fetchInventory();
+                fetchTransactions();
+            } catch (error) {
+                 console.error('Error creating transaction:', error);
+                 showMessage(`Error: ${error.message}`, 'error');
+            }
+        });
+
+
+        // --- MODAL & DYNAMIC ROW FUNCTIONS ---
+        function openTransactionModal() {
+            document.getElementById('transaction-form').reset();
+            document.getElementById('transaction-details-container').innerHTML = '';
+            addTransactionDetailRow();
+            document.getElementById('transaction-modal').classList.add('is-open');
+        }
+
+        function closeTransactionModal() {
+            document.getElementById('transaction-modal').classList.remove('is-open');
+        }
+
+        function addTransactionDetailRow() {
+            const container = document.getElementById('transaction-details-container');
+            const newRow = document.createElement('div');
+            newRow.className = 'transaction-detail-row grid grid-cols-12 gap-2 items-center';
+            
+            let productOptions = '<option value="">Select a product...</option>';
+            productCache.forEach(p => {
+                productOptions += `<option value="${p.id}">${p.part_no} - Stock: ${p.current_stock}</option>`;
+            });
+
+            newRow.innerHTML = `
+                <div class="col-span-7">
+                    <select name="product" required class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        ${productOptions}
+                    </select>
+                </div>
+                <div class="col-span-4">
+                    <input type="number" name="quantity" min="1" required placeholder="Qty" class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="col-span-1">
+                    <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-red-500 hover:text-red-700 font-bold">&times;</button>
+                </div>
+            `;
+            container.appendChild(newRow);
+        }
+
+        // --- INITIAL LOAD ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchInventory();
+            fetchTransactions();
+        });
+
+    </script>
+</body>
+</html>
