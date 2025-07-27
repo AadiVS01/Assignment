@@ -3,14 +3,15 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.shortcuts import render
 
-from .models import Product, StockTransaction, StockTransactionDetail
+from .models import Product, StockTransaction
 from .serializers import ProductSerializer, StockTransactionSerializer
 
 # --- API Views ---
 
-class ProductViewSet(viewsets.ReadOnlyModelViewSet):
+# FIX: Changed from ReadOnlyModelViewSet to ModelViewSet to allow POST requests
+class ProductViewSet(viewsets.ModelViewSet):
     """
-    API endpoint that allows products to be viewed.
+    API endpoint that allows products to be viewed or created.
     Provides a 'inventory' view to see the current stock levels of all products.
     """
     queryset = Product.objects.all()
@@ -60,4 +61,3 @@ def inventory_ui(request):
     This page will contain the JavaScript to interact with our API.
     """
     return render(request, 'inventory/index.html')
-
